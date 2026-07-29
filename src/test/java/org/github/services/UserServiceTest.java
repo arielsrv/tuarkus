@@ -30,8 +30,8 @@ class UserServiceTest {
     @Test
     void getUsers_mapsUserResponsesToUserDTOs_withPostsAndTodos() {
         when(client.getUsers()).thenReturn(Uni.createFrom().item(List.of(
-            new UserResponse(1L, "Alice", "alice@example.com"),
-            new UserResponse(2L, "Bob", "bob@example.com"))));
+                new UserResponse(1L, "Alice", "alice@example.com"),
+                new UserResponse(2L, "Bob", "bob@example.com"))));
 
         when(client.getPosts(1L)).thenReturn(Uni.createFrom().item(List.of(new PostResponse(10L, "Post 1"))));
         when(client.getPosts(2L)).thenReturn(Uni.createFrom().item(List.of(new PostResponse(20L, "Post 2"))));
@@ -41,9 +41,9 @@ class UserServiceTest {
 
         // Cada post busca sus comments (nivel anidado de concurrencia).
         when(client.getComments(10L)).thenReturn(Uni.createFrom().item(List.of(
-            new CommentResponse(1000L, "Carol", "carol@example.com", "Comment on post 10"))));
+                new CommentResponse(1000L, "Carol", "carol@example.com", "Comment on post 10"))));
         when(client.getComments(20L)).thenReturn(Uni.createFrom().item(List.of(
-            new CommentResponse(2000L, "Dave", "dave@example.com", "Comment on post 20"))));
+                new CommentResponse(2000L, "Dave", "dave@example.com", "Comment on post 20"))));
 
         List<UserDTO> result = userService.getUsers().await().indefinitely();
 

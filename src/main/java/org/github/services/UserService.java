@@ -27,23 +27,23 @@ public class UserService {
     // Mutiny del concatMapEager de RxJava.
     public Uni<List<UserDTO>> getUsers() {
         return client.getUsers()
-            .onItem().transformToUni(users -> joinAll(users.stream().map(this::toUserDTO).toList()));
+                .onItem().transformToUni(users -> joinAll(users.stream().map(this::toUserDTO).toList()));
     }
 
     private Uni<UserDTO> toUserDTO(UserResponse user) {
         Uni<List<PostDTO>> posts = postsWithComments(user.id());
         Uni<List<TodoResponse>> todos = client.getTodos(user.id());
         return Uni.combine().all().unis(posts, todos).asTuple()
-            .map(tuple -> mapToUserDTO(user, tuple.getItem1(), tuple.getItem2()));
+                .map(tuple -> mapToUserDTO(user, tuple.getItem1(), tuple.getItem2()));
     }
 
     // Segundo nivel de fan-out: por cada post del usuario, sus comments en paralelo.
     private Uni<List<PostDTO>> postsWithComments(Long userId) {
         return client.getPosts(userId)
-            .onItem().transformToUni(posts -> joinAll(posts.stream()
-                .map(post -> client.getComments(post.id())
-                    .map(comments -> mapToPostDTO(post, comments)))
-                .toList()));
+                .onItem().transformToUni(posts -> joinAll(posts.stream()
+                        .map(post -> client.getComments(post.id())
+                                .map(comments -> mapToPostDTO(post, comments)))
+                        .toList()));
     }
 
     // Uni.join().all() no acepta una lista vacía, así que ese caso se corta antes.
@@ -56,15 +56,15 @@ public class UserService {
 
     private UserDTO mapToUserDTO(UserResponse user, List<PostDTO> posts, List<TodoResponse> todosResponse) {
         List<TodoDTO> todos = todosResponse.stream()
-            .map(todo -> new TodoDTO(todo.id(), todo.title(), todo.body(), todo.dueOn()))
-            .toList();
+                .map(todo -> new TodoDTO(todo.id(), todo.title(), todo.body(), todo.dueOn()))
+                .toList();
         return new UserDTO(user.id(), user.name(), user.email(), posts, todos);
     }
 
     private PostDTO mapToPostDTO(PostResponse post, List<CommentResponse> commentsResponse) {
         List<CommentDTO> comments = commentsResponse.stream()
-            .map(comment -> new CommentDTO(comment.id(), comment.name(), comment.email(), comment.body()))
-            .toList();
+                .map(comment -> new CommentDTO(comment.id(), comment.name(), comment.email(), comment.body()))
+                .toList();
         return new PostDTO(post.id(), post.title(), comments);
     }
 }

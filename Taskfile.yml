@@ -71,14 +71,14 @@ tasks:
   # ------------------------------------------------------------- docker ----
   docker:build:native:
     desc: Build the native container image
-    deps: [native:build:linux]
+    deps: [ native:build:linux ]
     cmds:
       - docker build -f src/main/docker/Dockerfile.native -t {{.IMAGE}} .
       - docker images {{.IMAGE}}
 
   docker:run:native:
     desc: Run the native image in the foreground — Ctrl-C to stop
-    deps: [docker:build:native]
+    deps: [ docker:build:native ]
     cmds:
       - |
         echo "→ http://localhost:{{.PORT}}/hello   (Ctrl-C to stop)"
@@ -86,7 +86,7 @@ tasks:
 
   docker:smoke:native:
     desc: Start the image, send a request, report startup time, tear down
-    deps: [docker:build:native]
+    deps: [ docker:build:native ]
     cmds:
       - defer: docker rm -f {{.APP}}-smoke >/dev/null 2>&1 || true
       - docker rm -f {{.APP}}-smoke >/dev/null 2>&1 || true
