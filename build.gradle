@@ -32,3 +32,12 @@ compileJava {
 compileTestJava {
     options.encoding = 'UTF-8'
 }
+
+// The native integration tests in src/native-test exercise the compiled binary,
+// but `testNative` pulls in a full native compilation — far too slow to hang off
+// the default `check`. Opt in with `./gradlew check -Pnative`.
+if (providers.gradleProperty('native').isPresent()) {
+    tasks.named('check') {
+        dependsOn tasks.named('testNative')
+    }
+}
