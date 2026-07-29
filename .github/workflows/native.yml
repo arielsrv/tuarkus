@@ -1,0 +1,65 @@
+name: Native Image
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+  # Weekly safety net (GraalVM / base-image drift), Mondays 04:00 UTC.
+  schedule:
+    - cron: '0 4 * * 1'
+
+concurrency:
+  group: native-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Native build & integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Installs a GraalVM 21 with the native-image tool on the runner.
+      - name: Set up GraalVM (native-image)
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: graalvm-community
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Compiles the native executable and runs the native integration tests
+      # (src/native-test, @QuarkusIntegrationTest) against it.
+      # jar.enabled=false avoids the "both native and JAR" packaging error.
+      - name: Build native executable and run native IT
+        run: ./gradlew testNative -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
+
+      # The native runner lands at build/*-runner, which Dockerfile.native
+      # copies as the container's application binary.
+      - name: Verify native container image builds
+        run: docker build -f src/main/docker/Dockerfile.native -t tuarkus:native .
+
+      - name: Upload native test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-test-reports
+          path: |
+            build/reports/tests/
+            build/test-results/
+          if-no-files-found: ignore
+
+      - name: Upload native executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-runner
+          path: build/*-runner
+          if-no-files-found: warn

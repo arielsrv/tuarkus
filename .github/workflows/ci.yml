@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref (keeps PR pushes cheap).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Test (JVM)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Validates ./gradlew checksum and enables build caching.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # `build` compiles main + test sources, runs the JVM test suite
+      # (src/test) and assembles the Quarkus fast-jar under build/quarkus-app.
+      - name: Build and run tests
+        run: ./gradlew build
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jvm-test-reports
+          path: |
+            build/reports/tests/
+            build/test-results/
+          if-no-files-found: ignore
+
+      - name: Upload application artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quarkus-app
+          path: build/quarkus-app/
+          if-no-files-found: warn
