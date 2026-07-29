@@ -26,22 +26,22 @@ public class UserService {
     // and returns a Uni<List<...>> preserving the input order. It is the Mutiny equivalent
     // of RxJava's concatMapEager.
     public Uni<List<UserDTO>> getUsers() {
-        return client.getUsers()
+        return this.client.getUsers()
                 .onItem().transformToUni(users -> joinAll(users.stream().map(this::toUserDTO).toList()));
     }
 
     private Uni<UserDTO> toUserDTO(UserResponse user) {
         Uni<List<PostDTO>> posts = postsWithComments(user.id());
-        Uni<List<TodoResponse>> todos = client.getTodos(user.id());
+        Uni<List<TodoResponse>> todos = this.client.getTodos(user.id());
         return Uni.combine().all().unis(posts, todos).asTuple()
                 .map(tuple -> mapToUserDTO(user, tuple.getItem1(), tuple.getItem2()));
     }
 
     // Second level of fan-out: for each user post, its comments in parallel.
     private Uni<List<PostDTO>> postsWithComments(Long userId) {
-        return client.getPosts(userId)
+        return this.client.getPosts(userId)
                 .onItem().transformToUni(posts -> joinAll(posts.stream()
-                        .map(post -> client.getComments(post.id())
+                        .map(post -> this.client.getComments(post.id())
                                 .map(comments -> mapToPostDTO(post, comments)))
                         .toList()));
     }
