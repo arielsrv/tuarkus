@@ -47,4 +47,23 @@ class UserControllerTest {
                 .body("[0].todos[0].title", equalTo("Todo 1"))
                 .body("[0].todos[0]", not(hasKey("due_on")));  // null due_on is omitted (serialization-inclusion=non-null)
     }
+
+    // A user with no posts exercises the joinAll short-circuit for empty collections,
+    // which Uni.join().all() cannot handle. getComments is never reached.
+    @Test
+    void getUsers_userWithNoPosts_returnsEmptyPostsAndTodos() {
+        when(client.getUsers()).thenReturn(Uni.createFrom().item(List.of(
+                new UserResponse(1L, "Alice", "alice@example.com"))));
+        when(client.getPosts(1L)).thenReturn(Uni.createFrom().item(List.of()));
+        when(client.getTodos(1L)).thenReturn(Uni.createFrom().item(List.of()));
+
+        given()
+                .when().get("/users")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].user_id", equalTo(1))
+                .body("[0].posts", hasSize(0))
+                .body("[0].todos", hasSize(0));
+    }
 }
