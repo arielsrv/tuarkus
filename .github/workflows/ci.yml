@@ -31,7 +31,7 @@ jobs:
 
       # Validates ./gradlew checksum and enables build caching.
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # `build` compiles main + test sources, runs the JVM test suite
       # (src/test) and assembles the Quarkus fast-jar under build/quarkus-app.
