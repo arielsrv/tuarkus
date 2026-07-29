@@ -1,0 +1,40 @@
+name: Docker (JVM image)
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+concurrency:
+  group: docker-jvm-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Build JVM container image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Dockerfile.jvm copies build/quarkus-app/*, so the fast-jar must exist.
+      - name: Build application
+        run: ./gradlew build
+
+      # Verifies the JVM Dockerfile builds cleanly. No push — this is a smoke test.
+      - name: Build JVM container image
+        run: docker build -f src/main/docker/Dockerfile.jvm -t tuarkus:jvm .

@@ -1,0 +1,70 @@
+name: Native Image
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+  # Weekly safety net (Mandrel / base-image drift), Mondays 04:00 UTC.
+  schedule:
+    - cron: '0 4 * * 1'
+
+concurrency:
+  group: native-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Native build & integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Only a JDK is needed to run Gradle — native-image itself runs inside
+      # the Mandrel builder container, so no GraalVM is installed on the runner.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # container-build runs native-image inside Quarkus' pinned Mandrel image,
+      # avoiding host GraalVM version mismatches. On a Linux runner this yields
+      # a Linux binary, exactly what Dockerfile.native expects.
+      # jar.enabled=false avoids the "both native and JAR" packaging error.
+      - name: Build native executable and run native IT
+        run: >-
+          ./gradlew testNative
+          -Dquarkus.native.enabled=true
+          -Dquarkus.native.container-build=true
+          -Dquarkus.package.jar.enabled=false
+
+      # The native runner lands at build/*-runner, which Dockerfile.native
+      # copies as the container's application binary.
+      - name: Verify native container image builds
+        run: docker build -f src/main/docker/Dockerfile.native -t tuarkus:native .
+
+      - name: Upload native test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-test-reports
+          path: |
+            build/reports/tests/
+            build/test-results/
+          if-no-files-found: ignore
+
+      - name: Upload native executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-runner
+          path: build/*-runner
+          if-no-files-found: warn
