@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'io.quarkus'
-    id 'com.github.ben-manes.versions'
+    id 'io.github.ben-manes.versions'
 }
 
 repositories {
