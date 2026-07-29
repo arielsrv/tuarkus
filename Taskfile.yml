@@ -1,0 +1,127 @@
+version: '3'
+
+vars:
+  APP: tuarkus
+  VERSION: 1.0-SNAPSHOT
+  RUNNER: build/{{.APP}}-{{.VERSION}}-runner
+  IMAGE: '{{.APP}}:native'
+  PORT: '8080'
+
+tasks:
+  default:
+    cmds:
+      - task --list
+    silent: true
+
+  # ---------------------------------------------------------------- JVM ----
+  dev:
+    desc: Quarkus dev mode with hot reload
+    cmds:
+      - ./gradlew quarkusDev
+
+  test:
+    desc: JVM unit tests
+    cmds:
+      - ./gradlew check
+
+  # ------------------------------------------------------------- native ----
+  native:build:
+    desc: Native binary for THIS host (Mach-O on macOS) — runs locally, not in Docker
+    cmds:
+      - ./gradlew buildNative
+    sources:
+      - src/main/**/*
+      - build.gradle
+      - gradle.properties
+    generates:
+      - '{{.RUNNER}}'
+
+  native:test:
+    desc: Native integration tests (src/native-test) against the host binary
+    cmds:
+      - ./gradlew check -Pnative
+
+  native:build:linux:
+    desc: Native binary built inside the Mandrel builder image (Linux ELF, for Docker)
+    cmds:
+      # `clean` is deliberate: the host and container builds write the same paths,
+      # so a leftover Mach-O runner can survive a container build and silently end
+      # up in the image. Starting empty is the only reliable way to tell them apart.
+      - ./gradlew clean buildNative -Dquarkus.native.container-build=true
+      - task: assert:elf
+    generates:
+      - '{{.RUNNER}}'
+
+  assert:elf:
+    desc: Fail unless the runner is a Linux ELF binary
+    internal: true
+    cmds:
+      - |
+        magic=$(xxd -p -l 4 '{{.RUNNER}}')
+        if [ "$magic" != "7f454c46" ]; then
+          echo "" >&2
+          echo "  ✗ {{.RUNNER}} is not a Linux ELF binary (magic: $magic)." >&2
+          echo "    $(file -b '{{.RUNNER}}')" >&2
+          echo "    Putting this in the image gives 'exec format error' at startup." >&2
+          echo "" >&2
+          exit 1
+        fi
+        echo "  ✓ Linux ELF binary, $(du -h '{{.RUNNER}}' | cut -f1)"
+
+  # ------------------------------------------------------------- docker ----
+  docker:build:native:
+    desc: Build the native container image
+    deps: [native:build:linux]
+    cmds:
+      - docker build -f src/main/docker/Dockerfile.native -t {{.IMAGE}} .
+      - docker images {{.IMAGE}}
+
+  docker:run:native:
+    desc: Run the native image in the foreground — Ctrl-C to stop
+    deps: [docker:build:native]
+    cmds:
+      - |
+        echo "→ http://localhost:{{.PORT}}/hello   (Ctrl-C to stop)"
+      - docker run --rm -p {{.PORT}}:8080 --name {{.APP}}-native {{.IMAGE}}
+
+  docker:smoke:native:
+    desc: Start the image, send a request, report startup time, tear down
+    deps: [docker:build:native]
+    cmds:
+      - defer: docker rm -f {{.APP}}-smoke >/dev/null 2>&1 || true
+      - docker rm -f {{.APP}}-smoke >/dev/null 2>&1 || true
+      - docker run -d --rm -p {{.PORT}}:8080 --name {{.APP}}-smoke {{.IMAGE}} >/dev/null
+      - |
+        for i in $(seq 1 50); do
+          if curl -fsS http://localhost:{{.PORT}}/hello >/dev/null 2>&1; then break; fi
+          sleep 0.2
+        done
+      - |
+        echo ""
+        echo "GET /hello"
+        code=$(curl -s -o /tmp/{{.APP}}-smoke.out -w '%{http_code}' http://localhost:{{.PORT}}/hello)
+        echo "  HTTP $code"
+        echo "  body: $(cat /tmp/{{.APP}}-smoke.out)"
+        echo ""
+        docker logs {{.APP}}-smoke 2>&1 | grep -E 'started in|Listening' || true
+        echo ""
+        echo "memory:"
+        docker stats --no-stream --format '  {{`{{.MemUsage}}`}} ({{`{{.MemPerc}}`}})' {{.APP}}-smoke
+        [ "$code" = "200" ] || { echo "  ✗ expected HTTP 200" >&2; exit 1; }
+        echo "  ✓ native image serving requests"
+
+  docker:sh:
+    desc: Shell into the running native container
+    cmds:
+      - docker exec -it {{.APP}}-native /bin/sh
+
+  docker:stop:
+    desc: Stop any running container from this image
+    cmds:
+      - docker rm -f {{.APP}}-native {{.APP}}-smoke 2>/dev/null || true
+
+  clean:
+    desc: Gradle clean plus the local image
+    cmds:
+      - ./gradlew clean
+      - docker rmi -f {{.IMAGE}} 2>/dev/null || true
