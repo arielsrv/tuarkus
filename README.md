@@ -62,17 +62,23 @@ failures, switch it to `andCollectFailures()`.
 
 ### ObjectMapper
 
-Configured via properties (applied to both the server **and** the REST client with the same
-mapper), equivalent to `javalin-api`'s `ObjectMapperProvider`:
+`config.ObjectMapperConfig` is an `ObjectMapperCustomizer` (equivalent to `javalin-api`'s
+`ObjectMapperProvider`) applied to the single managed mapper used by both the server **and**
+the REST client:
 
-```properties
-quarkus.jackson.property-naming-strategy=…$SnakeCaseStrategy   # userId → user_id, dueOn → due_on
-quarkus.jackson.serialization-inclusion=non-null               # null fields are omitted
-quarkus.jackson.write-dates-as-timestamps=false                # ISO-8601 dates
-quarkus.jackson.fail-on-unknown-properties=false               # ignore extra fields from gorest
+```java
+mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)  // userId → user_id, dueOn → due_on
+    .setSerializationInclusion(JsonInclude.Include.NON_NULL)           // null fields are omitted
+    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)           // ISO-8601 dates
+    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);       // ignore extra fields from gorest
 ```
 
-Thanks to `SnakeCaseStrategy`, no `@JsonProperty` annotations are needed on the records.
+Thanks to `SNAKE_CASE`, no `@JsonProperty` annotations are needed on the records.
+
+> It is configured in code rather than via the `quarkus.jackson.property-naming-strategy`
+> property on purpose: that property makes Quarkus resolve the strategy with a reflective
+> `Class.forName`, which fails in **native image** with `ClassNotFoundException`. Referencing
+> `PropertyNamingStrategies.SNAKE_CASE` in Java pins the class so GraalVM keeps it.
 
 The client base URL is configured with:
 
