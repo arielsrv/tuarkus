@@ -9,6 +9,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.github.http.HttpStatus;
 
 @Path("/hello")
 @Tag(name = "Example", description = "Health/greeting endpoint")
@@ -17,7 +18,7 @@ public class ExampleResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Operation(summary = "Greeting", description = "Returns a plain-text greeting; useful as a liveness smoke check.")
-    @APIResponse(responseCode = "200", description = "The greeting text",
+    @APIResponse(responseCode = HttpStatus.OK, description = "The greeting text",
             content = @Content(mediaType = MediaType.TEXT_PLAIN, schema = @Schema(implementation = String.class)))
     public String hello() {
         return "Hello from Quarkus REST";

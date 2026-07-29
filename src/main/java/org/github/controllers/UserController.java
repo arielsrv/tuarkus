@@ -13,6 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.github.dto.UserDTO;
+import org.github.http.HttpStatus;
 import org.github.services.UserService;
 
 import java.util.List;
@@ -31,7 +32,7 @@ public class UserController {
     @Operation(summary = "List users",
             description = "Fetches every user from GoRest and, for each one, concurrently aggregates their "
                     + "posts (with the comments of each post) and their todos into a single response.")
-    @APIResponse(responseCode = "200", description = "The list of aggregated users",
+    @APIResponse(responseCode = HttpStatus.OK, description = "The list of aggregated users",
             content = @Content(mediaType = MediaType.APPLICATION_JSON,
                     schema = @Schema(type = SchemaType.ARRAY, implementation = UserDTO.class)))
     public Uni<List<UserDTO>> getUsers() {
