@@ -40,13 +40,17 @@ The application, packaged as an _über-jar_, is now runnable using `java -jar bu
 You can create a native executable using:
 
 ```shell script
-./gradlew build -Dquarkus.native.enabled=true
+./gradlew quarkusBuild -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
 ```
+
+> **Note:** disabling the JAR package is required. Running the standard `build` task
+> while producing a native executable fails with _"Outputting both native and JAR
+> packages is not currently supported"_.
 
 Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
 
 ```shell script
-./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
+./gradlew quarkusBuild -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false -Dquarkus.native.container-build=true
 ```
 
 You can then execute your native executable with: `./build/tuarkus-1.0-SNAPSHOT-runner`
