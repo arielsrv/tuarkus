@@ -34,7 +34,7 @@ jobs:
           java-version: '21'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # container-build runs native-image inside Quarkus' pinned Mandrel image,
       # avoiding host GraalVM version mismatches. On a Linux runner this yields
