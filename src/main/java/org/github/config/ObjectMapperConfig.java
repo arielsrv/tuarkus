@@ -20,8 +20,8 @@ public class ObjectMapperConfig implements ObjectMapperCustomizer {
     @Override
     public void customize(ObjectMapper mapper) {
         mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)   // userId -> user_id
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL)            // omit null fields
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)            // ISO-8601 dates
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);        // ignore extra fields
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL)            // omit null fields
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)            // ISO-8601 dates
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);        // ignore extra fields
     }
 }
