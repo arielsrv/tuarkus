@@ -17,8 +17,8 @@ public class UserController {
     @Inject
     UserService userService;
 
-    // Devolver el Uni directamente: Quarkus REST se suscribe por nosotros y escribe
-    // la respuesta cuando el Uni emite, sin bloquear el hilo del event loop.
+    // Return the Uni directly: Quarkus REST subscribes for us and writes the response
+    // when the Uni emits, without blocking the event loop thread.
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<List<UserDTO>> getUsers() {

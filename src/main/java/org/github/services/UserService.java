@@ -21,10 +21,10 @@ public class UserService {
     @RestClient
     GoRestClient client;
 
-    // users -> por cada user, en paralelo: (posts -> por cada post sus comments) + todos.
-    // Uni.join().all(...).andFailFast() suscribe todos los Uni a la vez (fan-out real)
-    // y devuelve un Uni<List<...>> preservando el orden de entrada. Es el equivalente
-    // Mutiny del concatMapEager de RxJava.
+    // users -> for each user, in parallel: (posts -> for each post its comments) + todos.
+    // Uni.join().all(...).andFailFast() subscribes to all the Unis at once (real fan-out)
+    // and returns a Uni<List<...>> preserving the input order. It is the Mutiny equivalent
+    // of RxJava's concatMapEager.
     public Uni<List<UserDTO>> getUsers() {
         return client.getUsers()
                 .onItem().transformToUni(users -> joinAll(users.stream().map(this::toUserDTO).toList()));
@@ -37,7 +37,7 @@ public class UserService {
                 .map(tuple -> mapToUserDTO(user, tuple.getItem1(), tuple.getItem2()));
     }
 
-    // Segundo nivel de fan-out: por cada post del usuario, sus comments en paralelo.
+    // Second level of fan-out: for each user post, its comments in parallel.
     private Uni<List<PostDTO>> postsWithComments(Long userId) {
         return client.getPosts(userId)
                 .onItem().transformToUni(posts -> joinAll(posts.stream()
@@ -46,7 +46,7 @@ public class UserService {
                         .toList()));
     }
 
-    // Uni.join().all() no acepta una lista vacía, así que ese caso se corta antes.
+    // Uni.join().all() does not accept an empty list, so that case is short-circuited first.
     private <T> Uni<List<T>> joinAll(List<Uni<T>> unis) {
         if (unis.isEmpty()) {
             return Uni.createFrom().item(List.of());

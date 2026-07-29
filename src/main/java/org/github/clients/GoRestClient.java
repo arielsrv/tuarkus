@@ -12,8 +12,8 @@ import org.github.clients.responses.UserResponse;
 
 import java.util.List;
 
-// Cliente REST reactivo único contra gorest: cada método devuelve un Uni, así
-// las llamadas HTTP son no bloqueantes y corren sobre el event loop (Vert.x).
+// Single reactive REST client against gorest: every method returns a Uni, so the
+// HTTP calls are non-blocking and run on the event loop (Vert.x).
 @RegisterRestClient(configKey = "gorest")
 @Path("/public/v2")
 public interface GoRestClient {

@@ -39,7 +39,7 @@ class UserServiceTest {
         when(client.getTodos(1L)).thenReturn(Uni.createFrom().item(List.of(new TodoResponse(100L, "Todo 1", "Body 1", null))));
         when(client.getTodos(2L)).thenReturn(Uni.createFrom().item(List.of(new TodoResponse(200L, "Todo 2", "Body 2", null))));
 
-        // Cada post busca sus comments (nivel anidado de concurrencia).
+        // Each post fetches its comments (nested level of concurrency).
         when(client.getComments(10L)).thenReturn(Uni.createFrom().item(List.of(
                 new CommentResponse(1000L, "Carol", "carol@example.com", "Comment on post 10"))));
         when(client.getComments(20L)).thenReturn(Uni.createFrom().item(List.of(

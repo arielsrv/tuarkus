@@ -20,8 +20,8 @@ import static org.mockito.Mockito.when;
 @QuarkusTest
 class UserControllerTest {
 
-    // @InjectMock + @RestClient reemplaza el bean del REST client por un mock,
-    // así el test ejercita el endpoint real (/users) sin salir a la red.
+    // @InjectMock + @RestClient replaces the REST client bean with a mock, so the
+    // test exercises the real endpoint (/users) without hitting the network.
     @InjectMock
     @RestClient
     GoRestClient client;
@@ -45,6 +45,6 @@ class UserControllerTest {
                 .body("[0].posts[0].title", equalTo("Post 1"))
                 .body("[0].posts[0].comments[0].name", equalTo("Carol"))
                 .body("[0].todos[0].title", equalTo("Todo 1"))
-                .body("[0].todos[0]", not(hasKey("due_on")));  // due_on null se omite (serialization-inclusion=non-null)
+                .body("[0].todos[0]", not(hasKey("due_on")));  // null due_on is omitted (serialization-inclusion=non-null)
     }
 }

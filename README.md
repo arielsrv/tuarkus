@@ -1,66 +1,123 @@
 # tuarkus
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A **fully reactive** sample API built with [Quarkus](https://quarkus.io/), ported from
+[`javalin-api`](../javalin-api) by swapping **RxJava for [Mutiny](https://smallrye.io/smallrye-mutiny/)**.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+It exposes a single endpoint, `GET /users`, that aggregates data from the public
+[gorest.co.in](https://gorest.co.in) API: for each user it fetches, **in parallel**, its `posts`
+(and for each post its `comments`) and its `todos`, and assembles a nested `UserDTO`.
 
-## Running the application in dev mode
+The whole pipeline is non-blocking: the HTTP calls run on the Vert.x event loop and
+Quarkus REST subscribes to the `Uni` for us, without tying up threads while waiting.
 
-You can run your application in dev mode that enables live coding using:
+## Endpoint
 
-```shell script
-./gradlew quarkusDev
+```shell
+curl http://localhost:8080/users
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
-
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./gradlew build
+```jsonc
+[
+  {
+    "user_id": 8548968,
+    "name": "Swarnalata Ahluwalia",
+    "email": "swarnalata_ahluwalia@kovacek.example",
+    "posts": [
+      { "id": 1, "title": "Post 1", "comments": [ { "id": 10, "name": "...", "email": "...", "body": "..." } ] }
+    ],
+    "todos": [
+      { "id": 107119, "title": "...", "due_on": "2026-08-04T18:30:00Z" }
+    ]
+  }
+]
 ```
 
-It produces the `quarkus-run.jar` file in the `build/quarkus-app/` directory. Be aware that it’s not an _über-jar_ as
-the dependencies are copied into the `build/quarkus-app/lib/` directory.
+## Architecture
 
-The application is now runnable using `java -jar build/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./gradlew build -Dquarkus.package.jar.type=uber-jar
+```
+org.github
+├── clients
+│   ├── GoRestClient            reactive REST client (@RegisterRestClient), 4 endpoints → Uni<...>
+│   └── responses               UserResponse, PostResponse, TodoResponse, CommentResponse
+├── dto                         UserDTO, PostDTO, TodoDTO, CommentDTO  (the response)
+├── services
+│   └── UserService             the fan-out / orchestration
+└── controllers
+    └── UserController          GET /users → Uni<List<UserDTO>>
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar build/*-runner.jar`.
+### The reactive fan-out
 
-## Creating a native executable
+`UserService` is the Mutiny equivalent of `javalin-api`'s `UserService`:
 
-You can create a native executable using:
+| javalin-api (RxJava)                               | tuarkus (Mutiny)                                       |
+| -------------------------------------------------- | ------------------------------------------------------ |
+| `Observable<List<T>>`                              | `Uni<List<T>>`                                         |
+| `parallelMapEach` → `concatMapEager` (parallel + ordered) | `Uni.join().all(unis).andFailFast()` (parallel + ordered) |
+| `Observable.zip(posts, todos, …)`                  | `Uni.combine().all().unis(posts, todos).asTuple()`     |
+| you subscribe yourself                             | Quarkus REST subscribes for you                        |
 
-```shell script
-./gradlew quarkusBuild -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
+`andFailFast()`: if a sub-call fails, it short-circuits immediately. To tolerate partial
+failures, switch it to `andCollectFailures()`.
+
+### ObjectMapper
+
+Configured via properties (applied to both the server **and** the REST client with the same
+mapper), equivalent to `javalin-api`'s `ObjectMapperProvider`:
+
+```properties
+quarkus.jackson.property-naming-strategy=…$SnakeCaseStrategy   # userId → user_id, dueOn → due_on
+quarkus.jackson.serialization-inclusion=non-null               # null fields are omitted
+quarkus.jackson.write-dates-as-timestamps=false                # ISO-8601 dates
+quarkus.jackson.fail-on-unknown-properties=false               # ignore extra fields from gorest
 ```
 
-> **Note:** disabling the JAR package is required. Running the standard `build` task
-> while producing a native executable fails with _"Outputting both native and JAR
-> packages is not currently supported"_.
+Thanks to `SnakeCaseStrategy`, no `@JsonProperty` annotations are needed on the records.
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+The client base URL is configured with:
 
-```shell script
-./gradlew quarkusBuild -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false -Dquarkus.native.container-build=true
+```properties
+quarkus.rest-client.gorest.url=https://gorest.co.in
 ```
 
-You can then execute your native executable with: `./build/tuarkus-1.0-SNAPSHOT-runner`
+## Dev mode (hot reload)
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/gradle-tooling>.
+```shell
+./gradlew quarkusDev          # or: task dev
+```
 
-## Provided Code
+Dev UI at <http://localhost:8080/q/dev/>.
 
-### REST
+## Tests
 
-Easily start your REST Web Services
+```shell
+./gradlew test                # or: task test  (runs ./gradlew check)
+```
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+- **`UserServiceTest`** — Mockito unit test: mocks `GoRestClient` and verifies the full
+  mapping (posts → comments + nested todos).
+- **`UserControllerTest`** — `@QuarkusTest` + RestAssured against `/users` with the REST client
+  mocked (`@InjectMock @RestClient`); asserts the snake_case JSON and that null fields are omitted.
+
+## Packaging
+
+```shell
+./gradlew build                                        # JVM: build/quarkus-app/quarkus-run.jar
+java -jar build/quarkus-app/quarkus-run.jar
+```
+
+## Native & Docker
+
+Prefer the `Taskfile` wrappers (`task --list`), which validate the binary format before it
+goes into an image:
+
+```shell
+task native:build          # native binary for THIS host (Mach-O on macOS) — runs locally
+task native:build:linux    # Linux (ELF) binary built inside the Mandrel image, for Docker
+task native:test           # native integration tests (src/native-test)
+task docker:build:native   # native container image
+task docker:smoke:native   # start the image, send a request, report startup + memory
+```
+
+See the native build notes in `gradle.properties`. More info:
+<https://quarkus.io/guides/gradle-tooling>.
