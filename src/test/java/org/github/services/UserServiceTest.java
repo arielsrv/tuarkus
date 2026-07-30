@@ -31,14 +31,14 @@ class UserServiceTest {
     @Test
     void getUsers_mapsUserResponsesToUserDTOs_withPostsAndTodos() {
         when(client.getUsers(anyInt())).thenReturn(Uni.createFrom().item(List.of(
-                new UserResponse(1L, "Alice", "alice@example.com"),
-                new UserResponse(2L, "Bob", "bob@example.com"))));
+                new UserResponse(1L, "Alice", "alice@example.com", "female", "active"),
+                new UserResponse(2L, "Bob", "bob@example.com", "male", "inactive"))));
 
-        when(client.getPosts(1L)).thenReturn(Uni.createFrom().item(List.of(new PostResponse(10L, "Post 1"))));
-        when(client.getPosts(2L)).thenReturn(Uni.createFrom().item(List.of(new PostResponse(20L, "Post 2"))));
+        when(client.getPosts(1L)).thenReturn(Uni.createFrom().item(List.of(new PostResponse(10L, "Post 1", "Body of post 1"))));
+        when(client.getPosts(2L)).thenReturn(Uni.createFrom().item(List.of(new PostResponse(20L, "Post 2", "Body of post 2"))));
 
-        when(client.getTodos(1L)).thenReturn(Uni.createFrom().item(List.of(new TodoResponse(100L, "Todo 1", "Body 1", null))));
-        when(client.getTodos(2L)).thenReturn(Uni.createFrom().item(List.of(new TodoResponse(200L, "Todo 2", "Body 2", null))));
+        when(client.getTodos(1L)).thenReturn(Uni.createFrom().item(List.of(new TodoResponse(100L, "Todo 1", null, "pending"))));
+        when(client.getTodos(2L)).thenReturn(Uni.createFrom().item(List.of(new TodoResponse(200L, "Todo 2", null, "completed"))));
 
         // Each post fetches its comments (nested level of concurrency).
         when(client.getComments(10L)).thenReturn(Uni.createFrom().item(List.of(
@@ -55,9 +55,12 @@ class UserServiceTest {
         assertThat(alice.userId()).isEqualTo(1L);
         assertThat(alice.name()).isEqualTo("Alice");
         assertThat(alice.email()).isEqualTo("alice@example.com");
+        assertThat(alice.gender()).isEqualTo("female");
+        assertThat(alice.status()).isEqualTo("active");
         assertThat(alice.posts()).hasSize(1);
         assertThat(alice.posts().getFirst().id()).isEqualTo(10L);
         assertThat(alice.posts().getFirst().title()).isEqualTo("Post 1");
+        assertThat(alice.posts().getFirst().body()).isEqualTo("Body of post 1");
         assertThat(alice.posts().getFirst().comments()).hasSize(1);
         assertThat(alice.posts().getFirst().comments().getFirst().id()).isEqualTo(1000L);
         assertThat(alice.posts().getFirst().comments().getFirst().name()).isEqualTo("Carol");
@@ -66,20 +69,23 @@ class UserServiceTest {
         assertThat(alice.todos()).hasSize(1);
         assertThat(alice.todos().getFirst().id()).isEqualTo(100L);
         assertThat(alice.todos().getFirst().title()).isEqualTo("Todo 1");
-        assertThat(alice.todos().getFirst().body()).isEqualTo("Body 1");
+        assertThat(alice.todos().getFirst().status()).isEqualTo("pending");
 
         assertThat(bob.userId()).isEqualTo(2L);
         assertThat(bob.name()).isEqualTo("Bob");
         assertThat(bob.email()).isEqualTo("bob@example.com");
+        assertThat(bob.gender()).isEqualTo("male");
+        assertThat(bob.status()).isEqualTo("inactive");
         assertThat(bob.posts()).hasSize(1);
         assertThat(bob.posts().getFirst().id()).isEqualTo(20L);
         assertThat(bob.posts().getFirst().title()).isEqualTo("Post 2");
+        assertThat(bob.posts().getFirst().body()).isEqualTo("Body of post 2");
         assertThat(bob.posts().getFirst().comments()).hasSize(1);
         assertThat(bob.posts().getFirst().comments().getFirst().id()).isEqualTo(2000L);
         assertThat(bob.posts().getFirst().comments().getFirst().body()).isEqualTo("Comment on post 20");
         assertThat(bob.todos()).hasSize(1);
         assertThat(bob.todos().getFirst().id()).isEqualTo(200L);
         assertThat(bob.todos().getFirst().title()).isEqualTo("Todo 2");
-        assertThat(bob.todos().getFirst().body()).isEqualTo("Body 2");
+        assertThat(bob.todos().getFirst().status()).isEqualTo("completed");
     }
 }

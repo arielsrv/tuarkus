@@ -23,9 +23,13 @@ class UserControllerWireMockTest {
                 .body("$", hasSize(1))
                 .body("[0].user_id", equalTo(1))           // snake_case: userId -> user_id
                 .body("[0].name", equalTo("Alice"))
+                .body("[0].gender", equalTo("female"))
+                .body("[0].status", equalTo("active"))
                 .body("[0].posts[0].title", equalTo("Post 1"))
+                .body("[0].posts[0].body", equalTo("Body of post 1"))
                 .body("[0].posts[0].comments[0].name", equalTo("Carol"))
                 .body("[0].todos[0].title", equalTo("Todo 1"))
+                .body("[0].todos[0].status", equalTo("pending"))
                 .body("[0].todos[0]", not(hasKey("due_on")));  // null due_on is omitted (serialization-inclusion=non-null)
     }
 }

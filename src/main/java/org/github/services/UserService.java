@@ -11,9 +11,11 @@ import org.github.dto.CommentDTO;
 import org.github.dto.PostDTO;
 import org.github.dto.TodoDTO;
 import org.github.dto.UserDTO;
-import org.github.util.MutinyUtils;
 
 import java.util.List;
+
+import static io.smallrye.mutiny.Uni.combine;
+import static org.github.util.MutinyUtils.joinAll;
 
 
 @ApplicationScoped
@@ -32,21 +34,21 @@ public class UserService {
     // a Uni<List<...>> preserving the input order.
     public Uni<List<UserDTO>> getUsers() {
         return this.httpClient.getUsers(this.usersPerPage)
-                .onItem().transformToUni(userResponseList -> MutinyUtils.joinAll(userResponseList.stream()
+                .onItem().transformToUni(userResponseList -> joinAll(userResponseList.stream()
                         .map(user -> {
                             // Second level of fan-out: for each user post, its comments in parallel.
                             Uni<List<PostDTO>> posts = this.getPostsDto(user);
                             Uni<List<TodoDTO>> todos = this.getTodosDto(user);
 
-                            return Uni.combine().all().unis(posts, todos).asTuple()
-                                    .map(tuple -> new UserDTO(user.id(), user.name(), user.email(), tuple.getItem1(), tuple.getItem2()));
+                            return combine().all().unis(posts, todos).asTuple()
+                                    .map(tuple -> new UserDTO(user.id(), user.name(), user.email(), user.gender(), user.status(), tuple.getItem1(), tuple.getItem2()));
                         })
                         .toList()));
     }
 
     private Uni<List<PostDTO>> getPostsDto(UserResponse userResponse) {
         return this.httpClient.getPosts(userResponse.id())
-                .onItem().transformToUni(userPosts -> MutinyUtils.joinAll(userPosts.stream()
+                .onItem().transformToUni(userPosts -> joinAll(userPosts.stream()
                         .map(this::getPostWithComments)
                         .toList()));
     }
@@ -54,13 +56,13 @@ public class UserService {
     private Uni<List<TodoDTO>> getTodosDto(UserResponse userResponse) {
         return this.httpClient.getTodos(userResponse.id())
                 .map(todoResponseList -> todoResponseList.stream()
-                        .map(todoResponse -> new TodoDTO(todoResponse.id(), todoResponse.title(), todoResponse.body(), todoResponse.dueOn()))
+                        .map(todoResponse -> new TodoDTO(todoResponse.id(), todoResponse.title(), todoResponse.dueOn(), todoResponse.status()))
                         .toList());
     }
 
     private Uni<PostDTO> getPostWithComments(PostResponse postResponse) {
         return this.httpClient.getComments(postResponse.id())
-                .map(commentResponseList -> new PostDTO(postResponse.id(), postResponse.title(), commentResponseList.stream()
+                .map(commentResponseList -> new PostDTO(postResponse.id(), postResponse.title(), postResponse.body(), commentResponseList.stream()
                         .map(commentResponse -> new CommentDTO(commentResponse.id(), commentResponse.name(), commentResponse.email(), commentResponse.body()))
                         .toList()));
     }

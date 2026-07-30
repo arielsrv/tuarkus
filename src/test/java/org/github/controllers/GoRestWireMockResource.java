@@ -22,11 +22,11 @@ public class GoRestWireMockResource implements QuarkusTestResourceLifecycleManag
         this.server.start();
 
         stubJson("/public/v2/users",
-                "[{\"id\":1,\"name\":\"Alice\",\"email\":\"alice@example.com\"}]");
+                "[{\"id\":1,\"name\":\"Alice\",\"email\":\"alice@example.com\",\"gender\":\"female\",\"status\":\"active\"}]");
         stubJson("/public/v2/users/1/posts",
-                "[{\"id\":10,\"title\":\"Post 1\"}]");
+                "[{\"id\":10,\"title\":\"Post 1\",\"body\":\"Body of post 1\"}]");
         stubJson("/public/v2/users/1/todos",
-                "[{\"id\":100,\"title\":\"Todo 1\",\"body\":\"Body 1\",\"due_on\":null}]");
+                "[{\"id\":100,\"title\":\"Todo 1\",\"due_on\":null,\"status\":\"pending\"}]");
         stubJson("/public/v2/posts/10/comments",
                 "[{\"id\":1000,\"name\":\"Carol\",\"email\":\"carol@example.com\",\"body\":\"Comment on post 10\"}]");
 

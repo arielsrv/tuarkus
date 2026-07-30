@@ -30,9 +30,9 @@ class UserControllerTest {
     @Test
     void getUsers_returnsJson_withSnakeCaseAndNestedPostsCommentsTodos() {
         when(client.getUsers(anyInt())).thenReturn(Uni.createFrom().item(List.of(
-                new UserResponse(1L, "Alice", "alice@example.com"))));
-        when(client.getPosts(1L)).thenReturn(Uni.createFrom().item(List.of(new PostResponse(10L, "Post 1"))));
-        when(client.getTodos(1L)).thenReturn(Uni.createFrom().item(List.of(new TodoResponse(100L, "Todo 1", "Body 1", null))));
+                new UserResponse(1L, "Alice", "alice@example.com", "female", "active"))));
+        when(client.getPosts(1L)).thenReturn(Uni.createFrom().item(List.of(new PostResponse(10L, "Post 1", "Body of post 1"))));
+        when(client.getTodos(1L)).thenReturn(Uni.createFrom().item(List.of(new TodoResponse(100L, "Todo 1", null, "pending"))));
         when(client.getComments(10L)).thenReturn(Uni.createFrom().item(List.of(
                 new CommentResponse(1000L, "Carol", "carol@example.com", "Comment on post 10"))));
 
@@ -43,9 +43,13 @@ class UserControllerTest {
                 .body("$", hasSize(1))
                 .body("[0].user_id", equalTo(1))           // snake_case: userId -> user_id
                 .body("[0].name", equalTo("Alice"))
+                .body("[0].gender", equalTo("female"))
+                .body("[0].status", equalTo("active"))
                 .body("[0].posts[0].title", equalTo("Post 1"))
+                .body("[0].posts[0].body", equalTo("Body of post 1"))
                 .body("[0].posts[0].comments[0].name", equalTo("Carol"))
                 .body("[0].todos[0].title", equalTo("Todo 1"))
+                .body("[0].todos[0].status", equalTo("pending"))
                 .body("[0].todos[0]", not(hasKey("due_on")));  // null due_on is omitted (serialization-inclusion=non-null)
     }
 
@@ -54,7 +58,7 @@ class UserControllerTest {
     @Test
     void getUsers_userWithNoPosts_returnsEmptyPostsAndTodos() {
         when(client.getUsers(anyInt())).thenReturn(Uni.createFrom().item(List.of(
-                new UserResponse(1L, "Alice", "alice@example.com"))));
+                new UserResponse(1L, "Alice", "alice@example.com", "female", "active"))));
         when(client.getPosts(1L)).thenReturn(Uni.createFrom().item(List.of()));
         when(client.getTodos(1L)).thenReturn(Uni.createFrom().item(List.of()));
 
