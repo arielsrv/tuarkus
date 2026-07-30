@@ -35,21 +35,21 @@ dependencies {
     mockitoAgent('org.mockito:mockito-core') { setTransitive(false) }
 }
 
-group = 'org.github'
-version = '1.0-SNAPSHOT'
+setGroup('org.github')
+setVersion('1.0-SNAPSHOT')
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
+    setSourceCompatibility(JavaVersion.VERSION_25)
+    setTargetCompatibility(JavaVersion.VERSION_25)
 }
 
 compileJava {
-    options.encoding = 'UTF-8'
-    options.compilerArgs << '-parameters'
+    options.setEncoding('UTF-8')
+    options.getCompilerArgs() << '-parameters'
 }
 
 compileTestJava {
-    options.encoding = 'UTF-8'
+    options.setEncoding('UTF-8')
 }
 
 tasks.named('test', Test) {
@@ -65,7 +65,7 @@ tasks.named('test', Test) {
 // The native integration tests in src/native-test exercise the compiled binary,
 // but `testNative` pulls in a full native compilation — far too slow to hang off
 // the default `check`. Opt in with `./gradlew check -Pnative`.
-if (providers.gradleProperty('native').isPresent()) {
+if (getProviders().gradleProperty('native').isPresent()) {
     tasks.named('check') {
         dependsOn tasks.named('testNative')
     }
