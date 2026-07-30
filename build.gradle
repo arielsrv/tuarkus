@@ -32,7 +32,7 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.27.7'
     testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
     mockitoAgent(quarkusBom)
-    mockitoAgent('org.mockito:mockito-core') { transitive = false }
+    mockitoAgent('org.mockito:mockito-core') { setTransitive(false) }
 }
 
 group = 'org.github'
