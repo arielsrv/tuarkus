@@ -1,5 +1,8 @@
 # tuarkus
 
+[![CI](https://github.com/arielsrv/tuarkus/actions/workflows/ci.yml/badge.svg)](https://github.com/arielsrv/tuarkus/actions/workflows/ci.yml)
+![Coverage](.github/badges/jacoco.svg)
+
 A **fully reactive** sample API built with [Quarkus](https://quarkus.io/), ported from
 [`javalin-api`](../javalin-api) by swapping **RxJava for [Mutiny](https://smallrye.io/smallrye-mutiny/)**.
 

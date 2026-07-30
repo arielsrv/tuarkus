@@ -19,6 +19,11 @@ jobs:
   build:
     name: Build & Test (JVM)
     runs-on: ubuntu-latest
+    # Needs write to push the regenerated coverage badge back to master. On PRs
+    # from forks the token is read-only regardless; the badge steps below are
+    # gated to push-to-master, so they simply skip there.
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -37,6 +42,30 @@ jobs:
       # (src/test) and assembles the Quarkus fast-jar under build/quarkus-app.
       - name: Build and run tests
         run: ./gradlew build
+
+      # Turn build/jacoco-report/jacoco.csv into an SVG badge under .github/badges.
+      - name: Generate coverage badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          jacoco-csv-file: build/jacoco-report/jacoco.csv
+          badges-directory: .github/badges
+          generate-branches-badge: false
+
+      # Commit the badge back only when it actually changed, tagging the commit
+      # with [skip ci] so this workflow does not retrigger itself in a loop.
+      - name: Commit coverage badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: |
+          if [[ -z "$(git status --porcelain .github/badges)" ]]; then
+            echo "Coverage badge unchanged — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/badges
+          git commit -m "chore: update coverage badge [skip ci]"
+          git push origin HEAD:master
 
       - name: Upload test reports
         if: always()
