@@ -58,7 +58,7 @@ tasks.named('test', Test) {
     // Print each test as it runs instead of staying silent.
     testLogging {
         events 'passed', 'skipped', 'failed'
-        exceptionFormat = 'full'
+        setExceptionFormat('full')
     }
 }
 
