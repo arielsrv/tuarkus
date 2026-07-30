@@ -50,7 +50,7 @@ compileTestJava {
 }
 
 tasks.named('test', Test) {
-    jvmArgs "-javaagent:${configurations.mockitoAgent.singleFile}"
+    jvmArgs "-javaagent:${configurations.mockitoAgent.getSingleFile()}"
 
     // Print each test as it runs instead of staying silent.
     testLogging {
