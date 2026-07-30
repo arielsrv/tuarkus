@@ -49,8 +49,14 @@ compileTestJava {
     options.encoding = 'UTF-8'
 }
 
-tasks.named('test') {
+tasks.named('test', Test) {
     jvmArgs "-javaagent:${configurations.mockitoAgent.singleFile}"
+
+    // Print each test as it runs instead of staying silent.
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat = 'full'
+    }
 }
 
 // The native integration tests in src/native-test exercise the compiled binary,
