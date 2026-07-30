@@ -30,9 +30,7 @@ dependencies {
     testImplementation 'io.rest-assured:rest-assured'
     testImplementation 'org.mockito:mockito-junit-jupiter'
     testImplementation 'org.assertj:assertj-core:3.27.7'
-    // Standalone (shaded) WireMock: lets the native integration test stub GoRest at the
-    // network layer, since @InjectMock/Mockito cannot reach into the packaged binary.
-    testImplementation 'org.wiremock:wiremock-standalone:3.13.1'
+    testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
     mockitoAgent(quarkusBom)
     mockitoAgent('org.mockito:mockito-core') { transitive = false }
 }
