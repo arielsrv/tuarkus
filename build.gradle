@@ -8,6 +8,14 @@ repositories {
     mavenCentral()
 }
 
+// Mockito's inline mock-maker needs a Java agent. If not passed as -javaagent it
+// self-attaches at runtime, which the JDK warns about and will disallow in a future
+// release. Resolve the mockito-core jar in its own configuration and hand it to the
+// test JVM explicitly. Version stays managed by the Quarkus BOM (enforcedPlatform).
+configurations {
+    mockitoAgent
+}
+
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-arc'
@@ -20,6 +28,8 @@ dependencies {
     testImplementation 'io.rest-assured:rest-assured'
     testImplementation 'org.mockito:mockito-junit-jupiter'
     testImplementation 'org.assertj:assertj-core:3.27.7'
+    mockitoAgent(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
+    mockitoAgent('org.mockito:mockito-core') { transitive = false }
 }
 
 group = 'org.github'
@@ -37,6 +47,10 @@ compileJava {
 
 compileTestJava {
     options.encoding = 'UTF-8'
+}
+
+tasks.named('test') {
+    jvmArgs "-javaagent:${configurations.mockitoAgent.singleFile}"
 }
 
 // The native integration tests in src/native-test exercise the compiled binary,
