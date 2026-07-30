@@ -20,18 +20,18 @@ import static org.github.util.MutinyUtils.joinAll;
 public class UserService {
 
     @RestClient
-    GoRestClient client;
+    GoRestClient httpClient;
 
     // users -> for each user, in parallel: (posts -> for each post-its comments) + todos.
     // MutinyUtils.joinAll(...) subscribes to all the Unis at once (real fan-out) and returns
     // a Uni<List<...>> preserving the input order.
     public Uni<List<UserDTO>> getUsers() {
-        return this.client.getUsers()
+        return this.httpClient.getUsers()
                 .onItem().transformToUni(users -> joinAll(users.stream()
                         .map(user -> {
                             // Second level of fan-out: for each user post, its comments in parallel.
-                            Uni<List<PostDTO>> posts = this.getPosts(user);
-                            Uni<List<TodoResponse>> todos = this.client.getTodos(user.id());
+                            Uni<List<PostDTO>> posts = this.getPostsDto(user);
+                            Uni<List<TodoResponse>> todos = this.httpClient.getTodos(user.id());
 
                             return Uni.combine().all().unis(posts, todos).asTuple()
                                     .map(tuple -> new UserDTO(user.id(), user.name(), user.email(), tuple.getItem1(), tuple.getItem2().stream()
@@ -41,15 +41,15 @@ public class UserService {
                         .toList()));
     }
 
-    private Uni<List<PostDTO>> getPosts(UserResponse user) {
-        return this.client.getPosts(user.id())
+    private Uni<List<PostDTO>> getPostsDto(UserResponse user) {
+        return this.httpClient.getPosts(user.id())
                 .onItem().transformToUni(userPosts -> joinAll(userPosts.stream()
-                        .map(this::getComments)
+                        .map(this::getPostWithComments)
                         .toList()));
     }
 
-    private Uni<PostDTO> getComments(PostResponse post) {
-        return this.client.getComments(post.id())
+    private Uni<PostDTO> getPostWithComments(PostResponse post) {
+        return this.httpClient.getComments(post.id())
                 .map(comments -> new PostDTO(post.id(), post.title(), comments.stream()
                         .map(comment -> new CommentDTO(comment.id(), comment.name(), comment.email(), comment.body()))
                         .toList()));
