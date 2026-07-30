@@ -39,17 +39,14 @@ setGroup('org.github')
 setVersion('1.0-SNAPSHOT')
 
 java {
-    setSourceCompatibility(JavaVersion.VERSION_25)
-    setTargetCompatibility(JavaVersion.VERSION_25)
+    toolchain {
+        getLanguageVersion().set(JavaLanguageVersion.of(25))
+    }
 }
 
-compileJava {
+tasks.withType(JavaCompile).configureEach {
     options.setEncoding('UTF-8')
     options.getCompilerArgs() << '-parameters'
-}
-
-compileTestJava {
-    options.setEncoding('UTF-8')
 }
 
 tasks.named('test', Test) {
