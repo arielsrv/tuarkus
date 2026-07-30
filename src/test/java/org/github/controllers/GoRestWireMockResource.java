@@ -34,7 +34,7 @@ public class GoRestWireMockResource implements QuarkusTestResourceLifecycleManag
     }
 
     private void stubJson(String path, String body) {
-        // urlPathEqualTo matches the path only, so the users request still matches once
+        // urlPathEqualTo matches the path only, so the user's request still matches once
         // it carries the ?per_page=... query string.
         this.server.stubFor(get(urlPathEqualTo(path))
                 .willReturn(aResponse()

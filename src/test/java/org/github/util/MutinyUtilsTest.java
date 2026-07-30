@@ -34,7 +34,7 @@ class MutinyUtilsTest {
 
         assertThatThrownBy(() -> MutinyUtils.joinAll(List.of(
                         Uni.createFrom().item(1),
-                        Uni.createFrom().<Integer>failure(boom)))
+                        Uni.createFrom().failure(boom)))
                 .await().indefinitely())
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("boom");
