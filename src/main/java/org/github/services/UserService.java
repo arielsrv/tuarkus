@@ -6,7 +6,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.github.clients.GoRestClient;
 import org.github.clients.responses.PostResponse;
-import org.github.clients.responses.TodoResponse;
 import org.github.clients.responses.UserResponse;
 import org.github.dto.CommentDTO;
 import org.github.dto.PostDTO;
@@ -37,12 +36,10 @@ public class UserService {
                         .map(user -> {
                             // Second level of fan-out: for each user post, its comments in parallel.
                             Uni<List<PostDTO>> posts = this.getPostsDto(user);
-                            Uni<List<TodoResponse>> todos = this.httpClient.getTodos(user.id());
+                            Uni<List<TodoDTO>> todos = this.getTodosDto(user);
 
                             return Uni.combine().all().unis(posts, todos).asTuple()
-                                    .map(tuple -> new UserDTO(user.id(), user.name(), user.email(), tuple.getItem1(), tuple.getItem2().stream()
-                                            .map(todo -> new TodoDTO(todo.id(), todo.title(), todo.body(), todo.dueOn()))
-                                            .toList()));
+                                    .map(tuple -> new UserDTO(user.id(), user.name(), user.email(), tuple.getItem1(), tuple.getItem2()));
                         })
                         .toList()));
     }
@@ -52,6 +49,13 @@ public class UserService {
                 .onItem().transformToUni(userPosts -> joinAll(userPosts.stream()
                         .map(this::getPostWithComments)
                         .toList()));
+    }
+
+    private Uni<List<TodoDTO>> getTodosDto(UserResponse user) {
+        return this.httpClient.getTodos(user.id())
+                .map(todos -> todos.stream()
+                        .map(todo -> new TodoDTO(todo.id(), todo.title(), todo.body(), todo.dueOn()))
+                        .toList());
     }
 
     private Uni<PostDTO> getPostWithComments(PostResponse post) {
