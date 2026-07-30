@@ -4,6 +4,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.github.clients.responses.CommentResponse;
 import org.github.clients.responses.PostResponse;
@@ -20,7 +21,7 @@ public interface GoRestClient {
 
     @GET
     @Path("/users")
-    Uni<List<UserResponse>> getUsers();
+    Uni<List<UserResponse>> getUsers(@QueryParam("per_page") int perPage);
 
     @GET
     @Path("/users/{userId}/posts")

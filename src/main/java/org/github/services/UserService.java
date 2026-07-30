@@ -2,6 +2,7 @@ package org.github.services;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.github.clients.GoRestClient;
 import org.github.clients.responses.PostResponse;
@@ -22,11 +23,16 @@ public class UserService {
     @RestClient
     GoRestClient httpClient;
 
+    // Page size requested from gorest for the top-level users list. gorest caps per_page
+    // at 100; larger values are silently ignored and fall back to 10.
+    @ConfigProperty(name = "gorest.users.per-page", defaultValue = "10")
+    int usersPerPage;
+
     // users -> for each user, in parallel: (posts -> for each post-its comments) + todos.
     // MutinyUtils.joinAll(...) subscribes to all the Unis at once (real fan-out) and returns
     // a Uni<List<...>> preserving the input order.
     public Uni<List<UserDTO>> getUsers() {
-        return this.httpClient.getUsers()
+        return this.httpClient.getUsers(this.usersPerPage)
                 .onItem().transformToUni(users -> joinAll(users.stream()
                         .map(user -> {
                             // Second level of fan-out: for each user post, its comments in parallel.

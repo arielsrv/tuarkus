@@ -15,6 +15,7 @@ import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 @QuarkusTest
@@ -28,7 +29,7 @@ class UserControllerTest {
 
     @Test
     void getUsers_returnsJson_withSnakeCaseAndNestedPostsCommentsTodos() {
-        when(client.getUsers()).thenReturn(Uni.createFrom().item(List.of(
+        when(client.getUsers(anyInt())).thenReturn(Uni.createFrom().item(List.of(
                 new UserResponse(1L, "Alice", "alice@example.com"))));
         when(client.getPosts(1L)).thenReturn(Uni.createFrom().item(List.of(new PostResponse(10L, "Post 1"))));
         when(client.getTodos(1L)).thenReturn(Uni.createFrom().item(List.of(new TodoResponse(100L, "Todo 1", "Body 1", null))));
@@ -52,7 +53,7 @@ class UserControllerTest {
     // which Uni.join().all() cannot handle. getComments is never reached.
     @Test
     void getUsers_userWithNoPosts_returnsEmptyPostsAndTodos() {
-        when(client.getUsers()).thenReturn(Uni.createFrom().item(List.of(
+        when(client.getUsers(anyInt())).thenReturn(Uni.createFrom().item(List.of(
                 new UserResponse(1L, "Alice", "alice@example.com"))));
         when(client.getPosts(1L)).thenReturn(Uni.createFrom().item(List.of()));
         when(client.getTodos(1L)).thenReturn(Uni.createFrom().item(List.of()));

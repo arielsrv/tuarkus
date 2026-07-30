@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,7 +30,7 @@ class UserServiceTest {
 
     @Test
     void getUsers_mapsUserResponsesToUserDTOs_withPostsAndTodos() {
-        when(client.getUsers()).thenReturn(Uni.createFrom().item(List.of(
+        when(client.getUsers(anyInt())).thenReturn(Uni.createFrom().item(List.of(
                 new UserResponse(1L, "Alice", "alice@example.com"),
                 new UserResponse(2L, "Bob", "bob@example.com"))));
 
