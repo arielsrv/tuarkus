@@ -32,8 +32,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v6.3.0
 
       # Dockerfile.jvm copies build/quarkus-app/*, so the fast-jar must exist.
+      # `quarkusBuild -x test` assembles it without re-running the JVM suite, which
+      # ci.yml already ran on this same commit; this job only smoke-tests packaging.
       - name: Build application
-        run: ./gradlew build
+        run: ./gradlew quarkusBuild -x test
 
       # Verifies the JVM Dockerfile builds cleanly. No push — this is a smoke test.
       - name: Build JVM container image
