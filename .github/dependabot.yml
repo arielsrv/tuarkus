@@ -12,4 +12,11 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily  
+      interval: daily
+
+  # The four Dockerfiles live under src/main/docker; Dependabot matches any file
+  # whose name contains "dockerfile", so Dockerfile.jvm/.native/etc. are covered.
+  - package-ecosystem: docker
+    directory: /src/main/docker
+    schedule:
+      interval: weekly
