@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-gradle",
+    "redhat.vscode-quarkus",
+    "redhat.vscode-microprofile",
+    "task.vscode-task",
+    "ms-azuretools.vscode-docker",
+    "redhat.vscode-yaml",
+    "github.vscode-github-actions",
+    "humao.rest-client",
+    "editorconfig.editorconfig"
+  ],
+  "unwantedRecommendations": []
+}
