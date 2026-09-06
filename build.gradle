@@ -76,3 +76,15 @@ if (getProviders().gradleProperty('native').isPresent()) {
         dependsOn tasks.named('testNative')
     }
 }
+
+// Quarkus' packaging tasks key their build-cache entries off the sources and the
+// application model, but not off the packaging mode, so a JVM entry is a cache hit
+// for a native build: build/ comes back holding a fast-jar and no runner binary,
+// while quarkus-artifact.properties still claims type=native. Everything downstream
+// then fails on a binary that was never produced — and `testNative` restored from
+// cache reports green without running a single test. Correctness beats the few
+// seconds these tasks would save; compileJava, test and the rest stay cacheable.
+tasks.matching { it.getName() in ['quarkusAppPartsBuild', 'quarkusBuild', 'testNative'] }
+        .configureEach {
+            getOutputs().cacheIf { false }
+        }
