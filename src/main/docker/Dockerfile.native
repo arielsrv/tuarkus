@@ -16,7 +16,7 @@
 # The `registry.access.redhat.com/ubi10/ubi-minimal:10.2-1782798957` base image is based on UBI 10.
 # The tag pins both the 10.2 release and its exact build for reproducibility.
 ###
-FROM registry.access.redhat.com/ubi10/ubi-minimal:10.2-1782798957
+FROM registry.access.redhat.com/ubi10/ubi-minimal:1788137827
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
