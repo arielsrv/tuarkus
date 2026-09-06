@@ -49,8 +49,17 @@ tasks.withType(JavaCompile).configureEach {
     options.getCompilerArgs() << '-parameters'
 }
 
+// Resolved lazily at execution time: with parallel configuration cache, resolving a
+// configuration while tasks are being created fails ("without an exclusive lock").
+def mockitoAgentJar = configurations.mockitoAgent.getIncoming().getFiles()
+
 tasks.named('test', Test) {
-    jvmArgs "-javaagent:${configurations.mockitoAgent.getSingleFile()}"
+    getJvmArgumentProviders().add(new CommandLineArgumentProvider() {
+        @Override
+        Iterable<String> asArguments() {
+            return List.of('-javaagent:' + mockitoAgentJar.getSingleFile().getAbsolutePath())
+        }
+    })
 
     // Print each test as it runs instead of staying silent.
     testLogging {
