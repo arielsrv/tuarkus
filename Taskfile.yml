@@ -7,6 +7,12 @@ vars:
   IMAGE: '{{.APP}}:native'
   PORT: '8080'
 
+env:
+  # Host native builds need `native-image`, which the default Temurin JDK lacks.
+  # Respect an exported GRAALVM_HOME, else fall back to the SDKMAN GraalVM.
+  GRAALVM_HOME:
+    sh: echo "${GRAALVM_HOME:-$HOME/.sdkman/candidates/java/25.0.4-graal}"
+
 tasks:
   default:
     cmds:
